@@ -52,8 +52,7 @@ jobs:
           paths: [frontend/node_modules]
           key: << pipeline.id >>-frontend-build
       - slack/notify:
-          fail_only: true
-
+          event: fail
   build-backend:
     docker:
       - image: circleci/node:13.8.0
