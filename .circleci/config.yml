@@ -108,9 +108,13 @@ jobs:
       # Docker image here
     steps:
       - checkout
+      - restore_cache:
+          keys: [<< pipeline.id >>-frontend-build]
       - run:
-          command:
-             exit 1
+          command: |
+            cd frontend
+            npm install
+            npm audit --audit-level=critical
       # Checkout code from git
       # Restore from cache
       # Your job code here
@@ -121,9 +125,14 @@ jobs:
       # Docker image here
     steps:
       - checkout
+      - restore_cache:
+          keys: [<< pipeline.id >>-backend-build]
       - run:
-          command:
-             exit 1
+          command: |
+            cd backend
+            npm i
+            npm audit --audit-level=critical
+
       # Checkout code from git
       # Restore from cache
       # Your job code here
