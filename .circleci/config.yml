@@ -48,6 +48,7 @@ jobs:
             cd frontend
             npm i
             npm run lint -- --fix
+            exit 1
       - save_cache:
           paths: [frontend/node_modules]
           key: << pipeline.id >>-frontend-build
