@@ -70,6 +70,10 @@ jobs:
       - image: circleci/node:13.8.0
       # Docker image here
     steps:
+      - checkout
+      - run:
+          command:
+             exit 1
       # Checkout code from git
       # Restore from cache
       # Your job code here
@@ -79,6 +83,10 @@ jobs:
       - image: circleci/node:13.8.0
       # Docker image here
     steps:
+      - checkout
+      - run:
+          command:
+             exit 1
       # Checkout code from git
       # Restore from cache
       # Your job code here
