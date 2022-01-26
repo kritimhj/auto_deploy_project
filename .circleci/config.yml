@@ -90,9 +90,9 @@ jobs:
       # Checkout code from git
       # Restore from cache
       # Your job code here
-    - slack/notify:
-        event: fail
-        template: basic_fail_1
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
 
   test-backend:
     docker:
@@ -110,9 +110,9 @@ jobs:
       # Checkout code from git
       # Restore from cache
       # Your job code here
-    - slack/notify:
-        event: fail
-        template: basic_fail_1
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
 
   scan-frontend:
     docker:
