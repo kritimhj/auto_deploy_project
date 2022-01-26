@@ -1,4 +1,6 @@
 version: 2.1
+orbs:
+  slack: circleci/slack@4.6.1
 
 commands:
   destroy-environment:
@@ -49,6 +51,8 @@ jobs:
       - save_cache:
           paths: [frontend/node_modules]
           key: << pipeline.id >>-frontend-build
+      - slack/notify:
+          fail_only: true
 
   build-backend:
     docker:
@@ -116,6 +120,7 @@ jobs:
             npm install
             npm audit fix
             npm audit --audit-level=critical
+#            npm audit fix --audit-level=critical --force
 
       # Checkout code from git
       # Restore from cache
@@ -135,6 +140,7 @@ jobs:
             npm i
             npm audit fix
             npm audit --audit-level=critical
+#            npm audit fix --audit-level=critical --force
 
 
       # Checkout code from git
