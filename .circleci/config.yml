@@ -44,7 +44,7 @@ jobs:
           name: Build front-end
           command: |
             cd frontend
-            nmp i
+            npm i
             npm run lint
       - save_cache:
           paths: [frontend/node_modules]
@@ -61,8 +61,8 @@ jobs:
           name: Back-end build
           command: |
             cd backend
-            nmp i
-            nmp run lint
+            npm i
+            npm run lint
       - save_cache:
           paths: [backend/node_modules]
           key: << pipeline.id >>-backend-build
