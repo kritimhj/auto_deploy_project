@@ -78,7 +78,7 @@ jobs:
           keys: [<< pipeline.id >>-frontend-build]
       - run:
           name: test frontend
-          command:
+          command: |
             cd frontend
             npm run test
       # Checkout code from git
@@ -95,7 +95,7 @@ jobs:
           keys: [<< pipeline.id >>-backend-build]
       - run:
           name: test backend
-          command:
+          command: |
             cd backend
             npm run test
       # Checkout code from git
