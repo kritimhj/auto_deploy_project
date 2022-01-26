@@ -48,7 +48,6 @@ jobs:
             cd frontend
             npm i
             npm run lint -- --fix
-            exit 1
       - save_cache:
           paths: [frontend/node_modules]
           key: << pipeline.id >>-frontend-build
@@ -68,7 +67,9 @@ jobs:
             cd backend
             npm i
             npm run lint -- --fix
-
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
       - save_cache:
           paths: [backend/node_modules]
           key: << pipeline.id >>-backend-build
@@ -89,7 +90,10 @@ jobs:
       # Checkout code from git
       # Restore from cache
       # Your job code here
-                
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
+
   test-backend:
     docker:
       - image: circleci/node:13.8.0
@@ -106,7 +110,10 @@ jobs:
       # Checkout code from git
       # Restore from cache
       # Your job code here
-            
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
+
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -122,7 +129,9 @@ jobs:
             npm audit fix
             npm audit --audit-level=critical
 #            npm audit fix --audit-level=critical --force
-
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
       # Checkout code from git
       # Restore from cache
       # Your job code here
@@ -142,7 +151,9 @@ jobs:
             npm audit fix
             npm audit --audit-level=critical
 #            npm audit fix --audit-level=critical --force
-
+      - slack/notify:
+          event: fail
+          template: basic_fail_1
 
       # Checkout code from git
       # Restore from cache
