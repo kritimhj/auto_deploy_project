@@ -74,9 +74,13 @@ jobs:
       # Docker image here
     steps:
       - checkout
+      - restore_cache:
+          keys: [<< pipeline.id >>-frontend-build]
       - run:
+          name: test frontend
           command:
-             exit 1
+            cd frontend
+            npm run test
       # Checkout code from git
       # Restore from cache
       # Your job code here
@@ -87,9 +91,13 @@ jobs:
       # Docker image here
     steps:
       - checkout
+      - restore_cache:
+          keys: [<< pipeline.id >>-backend-build]
       - run:
+          name: test backend
           command:
-             exit 1
+            cd backend
+            npm run test
       # Checkout code from git
       # Restore from cache
       # Your job code here
