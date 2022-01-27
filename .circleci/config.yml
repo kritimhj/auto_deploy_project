@@ -205,24 +205,45 @@ jobs:
             - project/.circleci/ansible/inventory.txt
       # Here's where you will add some code to rollback on failure
 
-#  configure-infrastructure:
-#    docker:
-#      # Docker image here that supports Ansible
-#    steps:
-#      # Checkout code from git
-#      # Add ssh keys with fingerprint
-#      # attach workspace
-#      - run:
-#          name: Install dependencies
-#          command: |
-#            # Your code here
-#            exit 1
-#      - run:
-#          name: Configure server
-#          command: |
-#            # Your code here
-#            exit 1
-#      # Here's where you will add some code to rollback on failure
+  configure-infrastructure:
+    docker:
+      - image: python:3.7-alpine3.11
+      # Docker image here that supports Ansible
+    # Environment suggestion here: https://knowledge.udacity.com/questions/484346
+    environment:
+      TYPEORM_CONNECTION: $TYPEORM_CONNECTION
+      TYPEORM_HOST: $TYPEORM_HOST
+      TYPEORM_USERNAME: $TYPEORM_USERNAME
+      TYPEORM_PASSWORD: $TYPEORM_PASSWORD
+      TYPEORM_DATABASE: $TYPEORM_DATABASE
+      TYPEORM_MIGRATIONS: $TYPEORM_MIGRATIONS
+      TYPEORM_ENTITIES: $TYPEORM_ENTITIES
+    steps:
+      # Checkout code from git
+      - checkout
+      # Add ssh keys with fingerprint
+      - add_ssh_keys:
+          fingerprints:
+            - "c3:56:8d:ca:23:f3:14:0b:91:45:3e:a8:55:ac:d6:c7"
+      # attach workspace
+      - attach_workspace:
+          at: ~/
+      - run:
+          name: Install dependencies
+          command: |
+            # Your code here
+            apk add --update tar gzip ansible nodejs npm curl
+            pip3 install --upgrade pip \
+              && pip3 install awscli
+            #exit 1
+      - run:
+          name: Configure server
+          command: |
+            # Your code here
+            export ANSIBLE_HOST_KEY_CHECKING=False
+            ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/configure-server.yml
+            # exit 1
+      # Here's where you will add some code to rollback on failure
 #
 #  run-migrations:
 #    docker:
