@@ -446,8 +446,16 @@ jobs:
 
 cleanup:
     docker:
+      - image: amazon/aws-cli
       # Docker image here
     steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum -y install tar gzip
+      - attach_workspace:
+          at: ~/
       # Checkout code from git
       - run:
           name: Get old stack workflow id
