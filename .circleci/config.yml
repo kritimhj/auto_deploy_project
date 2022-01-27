@@ -199,6 +199,10 @@ jobs:
             --filters Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID} \
             --output text >> ~/project/.circleci/ansible/inventory.txt
             # exit 1
+      - save_cache:
+          paths:
+            - ~/project/.circleci/ansible/inventory.txt
+          key: << pipeline.id >>-deploy-infra
       - persist_to_workspace:
           root: ~/
           paths:
@@ -232,12 +236,13 @@ jobs:
           name: Install dependencies
           command: |
             # Your code here
-            apk add --update tar gzip ansible nodejs npm curl
+            apk add --update ansible
             pip3 install --upgrade pip \
               && pip3 install awscli
             #exit 1
       - run:
           name: Configure server
+          no_output_timeout: 30m
           command: |
             # Your code here
             export ANSIBLE_HOST_KEY_CHECKING=False
