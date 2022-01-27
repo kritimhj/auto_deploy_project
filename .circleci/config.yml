@@ -398,12 +398,14 @@ jobs:
           name: Backend smoke test.
           command: |
             # your code here
-            BACKEND_URL="http://$(cat /tmp/backend):3030/api/status"
-            echo "curl-ing ${BACKEND_URL}"
-            if curl ${BACKEND_URL}
-              then exit 0
-              else exit 1
-            fi
+            BACKEND_IP=$(aws ec2 describe-instances \
+                  --filters "Name=tag:Name, Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
+                  --query 'Reservations[*].Instances[*].PublicIpAddress' \
+                  --output text)
+            echo ${BACKEND_IP}
+            export URL="http://$BACKEND_IP:3030/api/status"
+            echo $URL
+            curl $URL
       - run:
           name: Frontend smoke test.
           command: |
