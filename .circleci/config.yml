@@ -444,10 +444,9 @@ jobs:
 #            --parameters ParameterKey=WorkflowID,ParameterValue=${CIRCLE_WORKFLOW_ID},UsePreviousValue=false
       # Here's where you will add some code to rollback on failure
 
-cleanup:
+  cleanup:
     docker:
       - image: amazon/aws-cli
-      # Docker image here
     steps:
       - checkout
       - run:
@@ -456,48 +455,20 @@ cleanup:
             yum -y install tar gzip
       - attach_workspace:
           at: ~/
-      # Checkout code from git
       - run:
-          name: Get old stack workflow id
+          name: Get old stack workflow id, list of stacks and remove old stacks and files
           command: |
-            # your code here
-            export OldWorkflowID="the id here"
-            export STACKS=[] #put the list of stacks here
-      - run:
-          name: Remove old stacks and files
-          command: |
-            # your code here
-            FoundWorkflowIDs=($(aws cloudformation describe-stacks \
-                          --query 'Stacks[?Tags[?Key == `project` && Value == `project4-frontend` || Value == `project4-backend`]].{Parameters: Parameters[?ParameterKey == `WorkflowID`]}' \
-                          --no-paginate \
-                          --output text | awk '{print $3}' |sort |uniq))
-            OldWorkflowID=()
-            for WorkflowID in ${FoundWorkflowIDs[@]}
-              do
-                if [ "${WorkflowID}" = "${CIRCLE_WORKFLOW_ID}" ]
-                  then continue
-                  else OldWorkflowID=(${WorkflowID} ${OldWorkflowID[@]})
-                fi
-              done
-            echo "Found Stacks with old WorkflowIDs:"
-            for i in ${OldWorkflowID[@]}
-              do echo ${i}
-              done
-            if [ ${#OldWorkflowID} -gt 0 ]
-              then
-                echo "Found ${#OldWorkflowID[@]} stack(s) which needs to be removed"
-                for ID in ${OldWorkflowID[@]}
-                  do
-                    echo "Removing S3 bucket with WorkflowID: ${ID}"
-                    aws s3 rm --recursive "s3://udapeople-${ID}/" &
-                    echo "Removing Backend stack with WorkflowID: ${ID}"
-                    aws cloudformation delete-stack --stack-name prodbackend-${ID} &
-                    echo "Removing Frontend stack with WorkflowID: ${ID}"
-                    aws cloudformation delete-stack --stack-name prodfrontend-${ID} &
-                    sleep 10
-                  done
-              else
-                echo "Did not find any stacks to remove."
+            export OldWorkflowID=$(aws cloudformation \
+              list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
+              --no-paginate --output text)
+            echo "${OldWorkflowID}"
+            export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+              --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
+            echo "${STACKS}"
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]; then
+              aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
+              aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
+              aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
             fi
             
 
