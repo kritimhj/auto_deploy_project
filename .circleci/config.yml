@@ -378,97 +378,122 @@ jobs:
 #
   smoke-test:
     docker:
-      - image: python:3.7-alpine3.11
       # Lightweight Docker image
+      - image: python:3.7-alpine3.11
     steps:
-      - checkout
       # Checkout code from git
       - run:
           name: Install dependencies
           command: |
+            # your code here
             apk add curl
             pip3 install --upgrade pip \
               && pip3 install awscli
+      - run:
+          name: Get backend url
+          command: |
             # your code here
-#      - run:
-#          name: Get backend url
-#          command: |
-#            # your code here
-#      - run:
-#          name: Backend smoke test.
-#          command: |
-#            # your code here
-#            BACKEND_IP=$(aws ec2 describe-instances \
-#                  --filters "Name=tag:Name, Values=backend-${CIRCLE_WORKFLOW_ID:0:7}" \
-#                  --query 'Reservations[*].Instances[*].PublicIpAddress' \
-#                  --output text)
-#            echo ${BACKEND_IP}
-#            export URL="http://$BACKEND_IP:3030/api/status"
-#            echo $URL
-#            curl $URL
-#      - run:
-#          name: Frontend smoke test.
-#          command: |
-#            # your code here
-#            URL="http://udapeople-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-us-east-1.amazonaws.com"
-#            echo "curl-ing ${URL}"
-#            if curl ${URL} | grep -q "Welcome"
-#              then exit 0
-#              else exit 1
-#            fi
+            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID}" --request GET https://api.memstash.io/values/deployment)
+            echo "I think the Backend IP is ${BACKEND_IP}"
+            echo ${BACKEND_IP} > /tmp/backend
+            echo -n "The file /tmp/backend contains IP:"
+            cat /tmp/backend
+      - run:
+          name: Backend smoke test.
+          command: |
+            # your code here
+            BACKEND_URL="http://$(cat /tmp/backend):3030/api/status"
+            echo "curl-ing ${BACKEND_URL}"
+            if curl ${BACKEND_URL}
+              then exit 0
+              else exit 1
+            fi
+      - run:
+          name: Frontend smoke test.
+          command: |
+            # your code here
+            URL="http://udapeople-${CIRCLE_WORKFLOW_ID}.s3-website-us-west-2.amazonaws.com"
+            echo "curl-ing ${URL}"
+            if curl ${URL} | grep -q "Welcome"
+              then exit 0
+              else exit 1
+            fi
       # Here's where you will add some code to rollback on failure
-#
-#  cloudfront-update:
-#    docker:
-#      - image: amazon/aws-cli
+      - destroy-environment
+      - empty-bucket
+      - revert-migrations
+
+  cloudfront-update:
+    docker:
       # Docker image here that supports AWS CLI
-#    steps:
-#      - checkout
+      - image: amazon/aws-cli
+    steps:
       # Checkout code from git
-#      - run:
-#          name: Install dependencies
-#          command: |
-#            # your code here
-#      - run:
-#          name: Update cloudfront distribution
-#          command: |
-#            # your code here
-#            # aws cloudformation deploy \
-#            #   --template-file .circleci/files/cloudfront.yml \
-#            #   --tags project=project4-cloudfront \
-#            #   --stack-name udapeople-cloudfront \
-#            #   --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID} &
-#            aws cloudformation update-stack \
-#            --use-previous-template \
-#            --stack-name udapeople-cloudfront \
-#            --parameters ParameterKey=WorkflowID,ParameterValue=${CIRCLE_WORKFLOW_ID},UsePreviousValue=false
+      - checkout
+      # - run:
+      #     name: Install dependencies
+      #     command: |
+      #       # your code here
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            # your code here
+            # aws cloudformation deploy \
+            #   --template-file .circleci/files/cloudfront.yml \
+            #   --tags project=project4-cloudfront \
+            #   --stack-name udapeople-cloudfront \
+            #   --parameter-overrides WorkflowID=${CIRCLE_WORKFLOW_ID} &
+            aws cloudformation update-stack \
+            --use-previous-template \
+            --stack-name udapeople-cloudfront \
+            --parameters ParameterKey=WorkflowID,ParameterValue=${CIRCLE_WORKFLOW_ID},UsePreviousValue=false
       # Here's where you will add some code to rollback on failure
+      - destroy-environment
+      - empty-bucket
+      - revert-migrations
 
   cleanup:
     docker:
+      # Docker image here
       - image: amazon/aws-cli
     steps:
+      # Checkout code from git
       - checkout
       - run:
-          name: Install dependencies
+          name: Find and remove old stacks
           command: |
-            yum -y install tar gzip
-      - attach_workspace:
-          at: ~/
-      - run:
-          name: Get old stack workflow id, list of stacks and remove old stacks and files
-          command: |
-            export OldWorkflowID=$(aws cloudformation \
-              list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
-              --no-paginate --output text)
-            echo "${OldWorkflowID}"
-            export STACKS=$(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
-              --stack-status-filter CREATE_COMPLETE --no-paginate --output text)
-            echo "${STACKS}"
-            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]; then
-              aws cloudformation delete-stack --stack-name "udapeople-backend-${OldWorkflowID}"
-              aws s3 rm "s3://udapeople-${OldWorkflowID}" --recursive
-              aws cloudformation delete-stack --stack-name "udapeople-frontend-${OldWorkflowID}"
+            # your code here
+            FoundWorkflowIDs=($(aws cloudformation describe-stacks \
+                          --query 'Stacks[?Tags[?Key == `project` && Value == `project4-frontend` || Value == `project4-backend`]].{Parameters: Parameters[?ParameterKey == `WorkflowID`]}' \
+                          --no-paginate \
+                          --output text | awk '{print $3}' |sort |uniq))
+            OldWorkflowID=()
+            for WorkflowID in ${FoundWorkflowIDs[@]}
+              do
+                if [ "${WorkflowID}" = "${CIRCLE_WORKFLOW_ID}" ]
+                  then continue
+                  else OldWorkflowID=(${WorkflowID} ${OldWorkflowID[@]})
+                fi
+              done
+            echo "Found Stacks with old WorkflowIDs:"
+            for i in ${OldWorkflowID[@]}
+              do echo ${i}
+              done
+            if [ ${#OldWorkflowID} -gt 0 ]
+              then
+                echo "Found ${#OldWorkflowID[@]} stack(s) which needs to be removed"
+                for ID in ${OldWorkflowID[@]}
+                  do
+                    echo "Removing S3 bucket with WorkflowID: ${ID}"
+                    aws s3 rm --recursive "s3://udapeople-${ID}/" &
+                    echo "Removing Backend stack with WorkflowID: ${ID}"
+                    aws cloudformation delete-stack --stack-name prodbackend-${ID} &
+                    echo "Removing Frontend stack with WorkflowID: ${ID}"
+                    aws cloudformation delete-stack --stack-name prodfrontend-${ID} &
+                    sleep 10
+                  done
+              else
+                echo "Did not find any stacks to remove."
             fi
             
 
@@ -499,13 +524,14 @@ workflows:
       - deploy-backend
 #      - deploy-backend:
 #          requires: [run-migrations]
+      - cleanup
       - smoke-test:
           requires: [deploy-backend]
 #      - smoke-test:
 #          requires: [deploy-backend, deploy-frontend]
 #      - cloudfront-update:
 #          requires: [smoke-test]
-       - cleanup:
-           requires: [smoke-test]
+#       - cleanup:
+#           requires: [smoke-test]
 #      - cleanup:
 #          requires: [cloudfront-update]
