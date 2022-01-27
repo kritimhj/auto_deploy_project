@@ -249,23 +249,39 @@ jobs:
             ansible-playbook -i ~/project/.circleci/ansible/inventory.txt ~/project/.circleci/ansible/configure-server.yml
             # exit 1
       # Here's where you will add some code to rollback on failure
-#
-#  run-migrations:
-#    docker:
-#      # Docker image here that supports NodeJS
-#    steps:
-#      # Checkout code from git
-#      - run:
-#          name: Run migrations
-#          command: |
-#            # Your code here
-#            exit 1
+
+  run-migrations:
+    docker:
+      - image: circleci/node:13.8.0
+      # Docker image here that supports NodeJS
+    steps:
+      - checkout
+      - aws-cli/install
+      # Checkout code from git
+      - run:
+          name: Run migrations
+          command: |
+            # Your code here
+            cd backend
+            npm install
+            echo "Running migrations..."
+            npm run migrations > /tmp/migrations.results
+            cat /tmp/migrations.results
+            if (grep "has been executed successfully" /tmp/migrations.results)
+            then
+            curl -H "Content-Type: text/plain" \
+              -H "token: ${CIRCLE_WORKFLOW_ID}" \
+              --request PUT \
+              --data "1" \
+              https://api.memstash.io/values/migration
+            fi
+            # exit 1
 #      - run:
 #          name: Send migration results to memstash
 #          command: |
 #            # Your code here
 #            exit 1
-#     # Here's where you will add some code to rollback on failure
+     # Here's where you will add some code to rollback on failure
 #
 #  deploy-frontend:
 #    docker:
@@ -383,8 +399,8 @@ workflows:
               only: [master]
       - configure-infrastructure:
           requires: [deploy-infrastructure]
-#      - run-migrations:
-#          requires: [configure-infrastructure]
+      - run-migrations:
+          requires: [configure-infrastructure]
 #      - deploy-frontend:
 #          requires: [run-migrations]
 #      - deploy-backend:
