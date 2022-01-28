@@ -177,8 +177,9 @@ jobs:
               --stack-name "udapeople-backend-${CIRCLE_WORKFLOW_ID:0:7}" \
               --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"\
               --tags project=udacity
-            URLS=$(aws ec2 describe-instances --region us-east-2 --query "Reservations[*].Instances[*].PublicIpAddress"  --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}"  --output text)
-            echo "URLS=$URLS"
+#            URLS=$(aws ec2 describe-instances --region us-east-1 --query "Reservations[*]
+#            .Instances[*].PublicIpAddress"  --filters "Name=tag:Name,Values=backend-${CIRCLE_WORKFLOW_ID:0:7}"  --output text)
+#            echo "URLS=$URLS"
 #            curl -H "Content-Type: text/plain" -H "token: 1e1e96f7-a791-42b5-b240-bd5407aa9c51" --request PUT --data "$URLS" https://api.memstash.io/values/url_${CIRCLE_WORKFLOW_ID:0:7}
 
       - run:
